@@ -10,6 +10,10 @@ from langchain.schema.runnable import RunnablePassthrough, RunnableLambda
 from langchain.chat_models import ChatOpenAI
 from langchain.callbacks.base import BaseCallbackHandler
 
+# Initialize session state
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
 
 class ChatCallbackHandler(BaseCallbackHandler):
     message = ""
@@ -26,19 +30,32 @@ class ChatCallbackHandler(BaseCallbackHandler):
 
 
 st.set_page_config(
-    page_title="Streamlit is Fire",
+    page_title="Streamlit is 🔥",
     page_icon=":fire:",
 )
+# Create necessary directories
+os.makedirs("./.cache/files", exist_ok=True)
+os.makedirs("./.cache/embeddings", exist_ok=True)
 
-llm = ChatOpenAI(
-    temperature=0.1,
-    streaming=True,
-    callbacks=[
-        ChatCallbackHandler(),
-    ],
-    model="gpt-3.5-turbo",
-)
+with st.sidebar:
+    openai_api_key = st.text_input("OpenAI API Key", type="password")
+    file = st.file_uploader("Upload a .txt .pdf or .docx file", type=[
+        "pdf", "docx", "txt"])
 
+# Initialize ChatOpenAI with API key from user input
+if openai_api_key:
+    llm = ChatOpenAI(
+        temperature=0.1,
+        streaming=True,
+        callbacks=[
+            ChatCallbackHandler(),
+        ],
+        model="gpt-3.5-turbo",
+        openai_api_key=openai_api_key
+    )
+else:
+    st.warning("Please enter your OpenAI API key to continue.")
+    st.stop()
 
 @st.cache_resource(show_spinner="Embedding file...")
 def embed_file(file):
@@ -56,7 +73,7 @@ def embed_file(file):
     )
     loader = UnstructuredFileLoader(file_path)
     docs = loader.load_and_split(text_splitter=splitter)
-    embeddings = OpenAIEmbeddings()
+    embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
     cached_embeddings = CacheBackedEmbeddings.from_bytes_store(
         embeddings, cache_dir)
     vectorstore = FAISS.from_documents(
@@ -101,7 +118,7 @@ prompt = ChatPromptTemplate.from_messages([
     ("human", "{question}"),
 ])
 
-st.title("Streamlit is Fire")
+st.title("Streamlit is 🔥")
 
 st.markdown("""
 Welcome!
@@ -110,14 +127,6 @@ Use this chatbot to ask questions to an AI about your file!
 
 Upload your files on the sidebar.
 """)
-
-# Create necessary directories
-os.makedirs("./.cache/files", exist_ok=True)
-os.makedirs("./.cache/embeddings", exist_ok=True)
-
-with st.sidebar:
-    file = st.file_uploader("Upload a .txt .pdf or .docx file", type=[
-        "pdf", "docx", "txt"])
 
 if file:
     retriever = embed_file(file)

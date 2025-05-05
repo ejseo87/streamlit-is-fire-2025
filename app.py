@@ -10,6 +10,10 @@ from langchain.schema.runnable import RunnablePassthrough, RunnableLambda
 from langchain.chat_models import ChatOpenAI
 from langchain.callbacks.base import BaseCallbackHandler
 
+# Initialize session state
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
 
 class ChatCallbackHandler(BaseCallbackHandler):
     message = ""
@@ -30,25 +34,45 @@ st.set_page_config(
     page_icon=":fire:",
 )
 
-llm = ChatOpenAI(
-    temperature=0.1,
-    streaming=True,
-    callbacks=[
-        ChatCallbackHandler(),
-    ],
-    model="gpt-3.5-turbo",
-)
+# Create necessary directories in /tmp
+CACHE_DIR = "./.cache"
+os.makedirs(os.path.join(CACHE_DIR, "files"), exist_ok=True)
+os.makedirs(os.path.join(CACHE_DIR, "embeddings"), exist_ok=True)
+
+
+with st.sidebar:
+    st.markdown("GitHub: [https://github.com/ejseo87/streamllit-is-fire-2025.git](https://github.com/ejseo87/streamllit-is-fire-2025.git)")
+    st.markdown("---")
+    openai_api_key = st.text_input("OpenAI API Key", type="password")
+    file = st.file_uploader("Upload a .txt .pdf or .docx file", type=[
+        "pdf", "docx", "txt"])
+
+# Initialize ChatOpenAI with API key from user input
+if openai_api_key:
+    llm = ChatOpenAI(
+        temperature=0.1,
+        streaming=True,
+        callbacks=[
+            ChatCallbackHandler(),
+        ],
+        model="gpt-3.5-turbo",
+        openai_api_key=openai_api_key
+    )
+else:
+    st.warning("Please enter your OpenAI API key to continue.")
+    st.stop()
 
 
 @st.cache_resource(show_spinner="Embedding file...")
 def embed_file(file):
     file_content = file.read()
-    file_path = os.path.join(".cache", "files", file.name)
+    file_path = os.path.join(CACHE_DIR, "files", file.name)
     # Save the file
     with open(file_path, "wb") as f:
         f.write(file_content)
     st.success(f"File [{file.name}] uploaded successfully!")
-    cache_dir = LocalFileStore(f"./.cache/embeddings/{file.name}")
+    cache_dir = LocalFileStore(os.path.join(
+        CACHE_DIR, "embeddings", file.name))
     splitter = CharacterTextSplitter.from_tiktoken_encoder(
         separator="\n",
         chunk_size=600,
@@ -56,7 +80,7 @@ def embed_file(file):
     )
     loader = UnstructuredFileLoader(file_path)
     docs = loader.load_and_split(text_splitter=splitter)
-    embeddings = OpenAIEmbeddings()
+    embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
     cached_embeddings = CacheBackedEmbeddings.from_bytes_store(
         embeddings, cache_dir)
     vectorstore = FAISS.from_documents(
@@ -110,14 +134,6 @@ Use this chatbot to ask questions to an AI about your file!
 
 Upload your files on the sidebar.
 """)
-
-# Create necessary directories
-os.makedirs("./.cache/files", exist_ok=True)
-os.makedirs("./.cache/embeddings", exist_ok=True)
-
-with st.sidebar:
-    file = st.file_uploader("Upload a .txt .pdf or .docx file", type=[
-        "pdf", "docx", "txt"])
 
 if file:
     retriever = embed_file(file)

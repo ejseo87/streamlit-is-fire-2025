@@ -1,4 +1,3 @@
-import streamlit as st
 import os
 from langchain.storage import LocalFileStore
 from langchain.text_splitter import CharacterTextSplitter
@@ -9,10 +8,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema.runnable import RunnablePassthrough, RunnableLambda
 from langchain.chat_models import ChatOpenAI
 from langchain.callbacks.base import BaseCallbackHandler
-
-# Initialize session state
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+import streamlit as st
 
 # Initialize session state
 if "messages" not in st.session_state:
@@ -39,7 +35,7 @@ st.set_page_config(
 )
 
 # Create necessary directories in /tmp
-CACHE_DIR = "./.cache"
+CACHE_DIR = "temp/.cache"
 os.makedirs(os.path.join(CACHE_DIR, "files"), exist_ok=True)
 os.makedirs(os.path.join(CACHE_DIR, "embeddings"), exist_ok=True)
 
@@ -84,7 +80,6 @@ def embed_file(file):
     )
     loader = UnstructuredFileLoader(file_path)
     docs = loader.load_and_split(text_splitter=splitter)
-    embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
     embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
     cached_embeddings = CacheBackedEmbeddings.from_bytes_store(
         embeddings, cache_dir)

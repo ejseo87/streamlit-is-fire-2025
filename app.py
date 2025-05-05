@@ -14,6 +14,10 @@ from langchain.callbacks.base import BaseCallbackHandler
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Initialize session state
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
 
 class ChatCallbackHandler(BaseCallbackHandler):
     message = ""
@@ -30,7 +34,7 @@ class ChatCallbackHandler(BaseCallbackHandler):
 
 
 st.set_page_config(
-    page_title="Streamlit is Fire",
+    page_title="Streamlit is 🔥",
     page_icon=":fire:",
 )
 
@@ -81,6 +85,7 @@ def embed_file(file):
     loader = UnstructuredFileLoader(file_path)
     docs = loader.load_and_split(text_splitter=splitter)
     embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
+    embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
     cached_embeddings = CacheBackedEmbeddings.from_bytes_store(
         embeddings, cache_dir)
     vectorstore = FAISS.from_documents(
@@ -125,7 +130,7 @@ prompt = ChatPromptTemplate.from_messages([
     ("human", "{question}"),
 ])
 
-st.title("Streamlit is Fire")
+st.title("Streamlit is 🔥")
 
 st.markdown("""
 Welcome!

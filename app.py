@@ -55,7 +55,7 @@ if openai_api_key:
         callbacks=[
             ChatCallbackHandler(),
         ],
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         openai_api_key=openai_api_key
     )
 else:
